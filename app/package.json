@@ -1,0 +1,9 @@
+{
+    "name": "pontaj-manager",
+    "version": "2.0.0",
+    "description": "Pontaj Manager - backend REST cu Node.js built-in",
+    "main": "src/server.js",
+    "scripts": {
+        "start": "node src/server.js"
+    }
+}
