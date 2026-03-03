@@ -25,38 +25,40 @@ export default function Layout({ children }) {
     const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
     const drawerContent = (
-        <Box sx={{ height: '100%', bgcolor: '#111827', display: 'flex', flexDirection: 'column' }}>
-            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
-                <Typography variant="h5" sx={{ mr: 1 }}>🇪🇺</Typography>
-                <Typography variant="h6" fontWeight="bold">Pontaj Manager</Typography>
+        <Box sx={{ height: '100%', bgcolor: 'background.paper', display: 'flex', flexDirection: 'column' }}>
+            <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2, borderBottom: '1px solid #222c42' }}>
+                <Typography variant="h5" sx={{ mr: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: '50%', border: '2px solid #ffd700', bgcolor: '#003399', fontSize: 18 }}>🇪🇺</Typography>
+                <Typography variant="h6" fontWeight="bold" sx={{ background: 'linear-gradient(90deg, #00c2ff, #3b6fff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', fontSize: '14px' }}>Pontaj Manager</Typography>
             </Box>
-            <Divider sx={{ borderColor: 'rgba(255,255,255,0.05)' }} />
             <List sx={{ px: 2, mt: 2, flex: 1 }}>
                 {menuItems.map((item) => {
                     const active = location.pathname.startsWith(item.route);
                     return (
-                        <ListItem key={item.text} disablePadding sx={{ mb: 1 }}>
+                        <ListItem key={item.text} disablePadding sx={{ mb: '2px' }}>
                             <ListItemButton
                                 component={NavLink}
                                 to={item.route}
                                 sx={{
                                     borderRadius: 2,
-                                    bgcolor: active ? 'rgba(59, 111, 255, 0.1)' : 'transparent',
-                                    color: active ? '#3b6fff' : '#9ca3af',
+                                    py: 1,
+                                    bgcolor: active ? 'rgba(59, 111, 255, 0.15)' : 'transparent',
+                                    color: active ? '#00c2ff' : '#6a7a96',
+                                    border: active ? '1px solid rgba(59, 111, 255, 0.25)' : '1px solid transparent',
                                     '&:hover': {
-                                        bgcolor: active ? 'rgba(59, 111, 255, 0.2)' : 'rgba(255,255,255,0.05)',
+                                        bgcolor: active ? 'rgba(59, 111, 255, 0.15)' : 'rgba(255,255,255,0.05)',
+                                        color: active ? '#00c2ff' : '#e8eaf0'
                                     },
                                 }}
                             >
-                                <ListItemIcon sx={{ color: 'inherit', minWidth: 40 }}>{item.icon}</ListItemIcon>
-                                <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: active ? 600 : 500 }} />
+                                <ListItemIcon sx={{ color: 'inherit', minWidth: 32 }}>{item.icon}</ListItemIcon>
+                                <ListItemText primary={item.text} primaryTypographyProps={{ fontWeight: active ? 600 : 500, fontSize: '13px' }} />
                             </ListItemButton>
                         </ListItem>
                     );
                 })}
             </List>
-            <Box sx={{ p: 2 }}>
-                <Typography variant="body2" color="text.secondary" align="center">v2.1 (React)</Typography>
+            <Box sx={{ p: 2, borderTop: '1px solid #222c42' }}>
+                <Typography variant="body2" color="text.secondary" align="center" sx={{ fontSize: '12px' }}>v2.1 (React)</Typography>
             </Box>
         </Box>
     );
