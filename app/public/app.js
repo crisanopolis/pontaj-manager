@@ -44,6 +44,7 @@ let currentYear = new Date().getFullYear();
 let currentMonth = new Date().getMonth() + 1;
 let pontajData = {};
 let atpSelectedPersonId = null;
+let activePersonFilters = [];
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
 function getMemberConfig(proj, personId) {
@@ -85,9 +86,40 @@ function goToRaw(pageId) {
 }
 
 // ============================================================
+//  PROJECTS DASHBOARD
+// ============================================================
+async function updateGlobalDashboard() {
+    try {
+        const stats = await apiGet(`/dashboard/${currentYear}/${currentMonth}`);
+        const dashM = document.getElementById('dash-month');
+        if (dashM) dashM.value = currentMonth;
+        const dashY = document.getElementById('dash-year');
+        if (dashY) dashY.value = currentYear;
+
+        document.getElementById('dash-total-ore').textContent = stats.totalOre || 0;
+        document.getElementById('dash-total-concedii').textContent = stats.totalCO_CM || 0;
+        document.getElementById('dash-total-pers').textContent = stats.totalPers || 0;
+    } catch (e) {
+        console.warn('Eroare la încărcarea dashboard-ului global', e);
+    }
+}
+
+function changeGlobalMonth() {
+    const m = document.getElementById('dash-month');
+    const y = document.getElementById('dash-year');
+    if (m && y) {
+        currentMonth = parseInt(m.value);
+        currentYear = parseInt(y.value);
+        updateGlobalDashboard();
+    }
+}
+
+// ============================================================
 //  PROJECTS
 // ============================================================
 function renderProjects() {
+    updateGlobalDashboard();
+
     const grid = document.getElementById('projects-grid');
     const empty = document.getElementById('projects-empty');
     grid.innerHTML = '';
@@ -639,9 +671,56 @@ function nextMonth() {
 // ============================================================
 //  PERSONS DATABASE
 // ============================================================
+function togglePersonFilter(code, el) {
+    if (activePersonFilters.includes(code)) {
+        activePersonFilters = activePersonFilters.filter(f => f !== code);
+        el.style.background = 'transparent';
+        el.style.fontWeight = 'normal';
+    } else {
+        activePersonFilters.push(code);
+        el.style.fontWeight = 'bold';
+        if (code === 'mgt' || code === 'cer') el.style.background = 'var(--surface2)';
+        if (code === 'bst') el.style.background = 'rgba(59,111,255,.15)';
+        if (code === 'emi') el.style.background = 'rgba(155,89,182,.15)';
+    }
+    renderPersonsDB();
+}
+
 function renderPersonsDB() {
     const q = document.getElementById('persons-search')?.value.toLowerCase() || '';
-    const persons = _persons.filter(p => !q || `${p.name} ${p.fname} ${p.cnp} ${p.cim || ''} ${p.cor || ''}`.toLowerCase().includes(q));
+
+    // Core filtering (search + smart DB pills)
+    const persons = _persons.filter(p => {
+        const matchQ = !q || `${p.name} ${p.fname} ${p.cnp} ${p.cim || ''} ${p.cor || ''}`.toLowerCase().includes(q);
+        if (!matchQ) return false;
+        if (!activePersonFilters.length) return true;
+
+        // Roles
+        let pRole = p.type === 'Management' ? 'mgt' : 'cer';
+        const searchMgt = activePersonFilters.includes('mgt');
+        const searchCer = activePersonFilters.includes('cer');
+        let rolePass = true;
+        if (searchMgt || searchCer) {
+            rolePass = (searchMgt && pRole === 'mgt') || (searchCer && pRole === 'cer');
+        }
+
+        // Employers
+        const emps = p.employers || [];
+        const oldCompat = (!emps.length && p.partner) ? 'bst' : null;
+        let pBst = emps.some(e => e.id === 'BST') || oldCompat === 'bst';
+        let pEmi = emps.some(e => e.id === 'EMI');
+
+        const searchBst = activePersonFilters.includes('bst');
+        const searchEmi = activePersonFilters.includes('emi');
+        let empPass = true;
+
+        if (searchBst || searchEmi) {
+            empPass = (searchBst && pBst) || (searchEmi && pEmi);
+        }
+
+        return rolePass && empPass;
+    });
+
     const tbody = document.getElementById('persons-tbody');
     const empty = document.getElementById('persons-empty');
     tbody.innerHTML = '';

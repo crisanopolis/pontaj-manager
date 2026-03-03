@@ -68,6 +68,55 @@
                 </div>
                 <button class="btn btn-primary" onclick="openProjectModal()">➕ Proiect nou</button>
             </div>
+
+            <!-- Global Dashboard Month Selector -->
+            <div class="card"
+                style="margin-bottom:24px; display:flex; gap:20px; align-items:center; background:linear-gradient(145deg, var(--surface), var(--surface2)); border:1px solid rgba(59,111,255,0.2)">
+                <div style="flex:1">
+                    <h2 style="font-size:16px; margin-bottom:4px; display:flex; align-items:center; gap:8px;">
+                        📊 Dashboard Global
+                        <select id="dash-month" onchange="changeGlobalMonth()"
+                            style="background:transparent; border:1px solid var(--border); color:var(--accent); font-weight:bold; font-size:14px; padding:2px 6px; border-radius:4px;">
+                            <option value="1">Ianuarie</option>
+                            <option value="2">Februarie</option>
+                            <option value="3">Martie</option>
+                            <option value="4">Aprilie</option>
+                            <option value="5">Mai</option>
+                            <option value="6">Iunie</option>
+                            <option value="7">Iulie</option>
+                            <option value="8">August</option>
+                            <option value="9">Septembrie</option>
+                            <option value="10">Octombrie</option>
+                            <option value="11">Noiembrie</option>
+                            <option value="12">Decembrie</option>
+                        </select>
+                        <input type="number" id="dash-year" value="2026" min="2024" max="2035"
+                            onchange="changeGlobalMonth()"
+                            style="background:transparent; border:1px solid var(--border); color:var(--accent); font-weight:bold; font-size:14px; padding:2px 6px; width:70px; border-radius:4px;" />
+                    </h2>
+                    <p style="font-size:12px; color:var(--text-muted)">Statistici adunate din toate proiectele active
+                        pentru luna selectată</p>
+                </div>
+                <div style="display:flex; gap:16px; align-items:center">
+                    <div style="text-align:center">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600">
+                            Total Ore</div>
+                        <div id="dash-total-ore" style="font-size:24px; font-weight:bold; color:var(--text)">0</div>
+                    </div>
+                    <div style="width:1px; height:30px; background:var(--border)"></div>
+                    <div style="text-align:center">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600">
+                            Zile CO/CM</div>
+                        <div id="dash-total-concedii" style="font-size:24px; font-weight:bold; color:#e74c3c">0</div>
+                    </div>
+                    <div style="width:1px; height:30px; background:var(--border)"></div>
+                    <div style="text-align:center">
+                        <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; font-weight:600">
+                            Persoane Pontate</div>
+                        <div id="dash-total-pers" style="font-size:24px; font-weight:bold; color:#2ecc71">0</div>
+                    </div>
+                </div>
+            </div>
             <div class="projects-grid" id="projects-grid">
                 <!-- cards injected by JS -->
             </div>
@@ -149,9 +198,22 @@
                 </div>
                 <button class="btn btn-primary" onclick="openPersonModal()">➕ Persoană nouă</button>
             </div>
-            <div class="search-bar">
-                <input type="text" id="persons-search" placeholder="🔍 Caută după nume, CNP..."
-                    oninput="renderPersonsDB()" />
+            <div class="search-bar" style="display:flex; gap:12px; flex-wrap:wrap">
+                <input type="text" id="persons-search" placeholder="🔍 Caută după nume, CNP sau CIM/COR..."
+                    oninput="renderPersonsDB()" style="flex:1; min-width:250px" />
+                <div style="display:flex; gap:8px; align-items:center" id="persons-filters">
+                    <button class="btn btn-ghost" data-filter="mgt" onclick="togglePersonFilter('mgt', this)"
+                        style="font-size:12px; padding:6px 12px; border:1px solid var(--border)">💼 Mgt</button>
+                    <button class="btn btn-ghost" data-filter="cer" onclick="togglePersonFilter('cer', this)"
+                        style="font-size:12px; padding:6px 12px; border:1px solid var(--border)">🔬 Cercetare</button>
+                    <div style="width:1px; height:20px; background:var(--border); margin:0 4px"></div>
+                    <button class="btn btn-ghost" data-filter="bst" onclick="togglePersonFilter('bst', this)"
+                        style="font-size:12px; padding:6px 12px; border:1px solid rgba(59,111,255,0.3); color:var(--accent)">🏢
+                        BST</button>
+                    <button class="btn btn-ghost" data-filter="emi" onclick="togglePersonFilter('emi', this)"
+                        style="font-size:12px; padding:6px 12px; border:1px solid rgba(155,89,182,0.3); color:#9b59b6">🏭
+                        EMI</button>
+                </div>
             </div>
             <div class="persons-table-wrap">
                 <table class="persons-table" id="persons-table">

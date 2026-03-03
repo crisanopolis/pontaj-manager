@@ -36,7 +36,11 @@ function readJSON(filePath) {
     catch { return null; }
 }
 function writeJSON(filePath, data) {
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
+    // Atomic write to prevent file corruption on crash or power failure.
+    // We write to a .tmp file first, then atomically rename it to the target file.
+    const tmpPath = filePath + '.tmp';
+    fs.writeFileSync(tmpPath, JSON.stringify(data, null, 2), 'utf8');
+    fs.renameSync(tmpPath, filePath);
 }
 
 // ============================================================
@@ -162,6 +166,57 @@ const server = http.createServer(async (req, res) => {
             writeJSON(path.join(DATA_DIR, 'persons.json'), persons);
             return json(res, 200, { ok: true });
         }
+    }
+
+    // --- DASHBOARD AGGREGATION ---
+    // GET /api/dashboard/:year/:month
+    const dashMatch = pathname.match(/^\/api\/dashboard\/(\d+)\/(\d+)$/);
+    if (dashMatch && method === 'GET') {
+        const [, year, month] = dashMatch;
+        let totalOre = 0;
+        let totalCO_CM = 0;
+        let uniquePersons = new Set();
+
+        const projects = readJSON(path.join(DATA_DIR, 'projects.json')) || [];
+        // Map of projectId -> Set of active personIds
+        const activeProjMembers = {};
+        projects.forEach(p => {
+            activeProjMembers[p.id] = new Set((p.members || []).map(m => m.personId));
+        });
+
+        const pDir = path.join(DATA_DIR, 'pontaj');
+        if (fs.existsSync(pDir)) {
+            const files = fs.readdirSync(pDir).filter(f => f.endsWith(`_${year}_${month}.json`));
+            for (const f of files) {
+                const projId = f.split('_')[0];
+                if (!activeProjMembers[projId]) continue; // Ignoră proiectele șterse
+
+                const data = readJSON(path.join(pDir, f)) || {};
+                // data is { personId: { days: { "1": 8, "2": "CO" }, norma: {} } }
+                for (const [pId, pData] of Object.entries(data)) {
+                    // Ignoră persoanele care au fost pontate anterior, dar care au fost șterse din proiect între timp
+                    if (!activeProjMembers[projId].has(pId)) continue;
+
+                    let hasHoursForProject = false;
+                    const daysMap = pData.days || {};
+                    for (const dayVal of Object.values(daysMap)) {
+                        if (typeof dayVal === 'number' && dayVal > 0) {
+                            totalOre += dayVal;
+                            hasHoursForProject = true;
+                        } else if (typeof dayVal === 'string' && (dayVal === 'CO' || dayVal === 'CM')) {
+                            totalCO_CM++; // Each day counts as 1 day of CO/CM
+                            hasHoursForProject = true;
+                        }
+                    }
+                    if (hasHoursForProject) uniquePersons.add(pId);
+                }
+            }
+        }
+        return json(res, 200, {
+            totalOre,
+            totalCO_CM,
+            totalPers: uniquePersons.size
+        });
     }
 
     // --- PONTAJ ---
