@@ -8,11 +8,33 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
-// ── Utils & Services ─────────────────────────────────────────
+// ── Utils ────────────────────────────────────────────────────
 const { ensureDirs } = require('./utils/fileStore');
-const ProjectService = require('./services/projectService');
-const PersonService = require('./services/personService');
-const PontajService = require('./services/pontajService');
+
+// ── Detectare mod stocare: JSON (implicit) sau SQLite ────────
+// Porneste cu: USE_SQLITE=true node server.js  pentru SQLite
+// Porneste normal pentru modul JSON (implicit)
+const USE_SQLITE = process.env.USE_SQLITE === 'true';
+
+let projectService, personService, pontajService;
+
+if (USE_SQLITE) {
+    const { getDb } = require('./db/database');
+    const ProjectServiceDb = require('./services/projectServiceDb');
+    const PersonServiceDb = require('./services/personServiceDb');
+    const PontajServiceDb = require('./services/pontajServiceDb');
+    const db = getDb(path.join(__dirname, '..', 'data'));
+    projectService = new ProjectServiceDb(db);
+    personService = new PersonServiceDb(db);
+    pontajService = new PontajServiceDb(db);
+} else {
+    const ProjectService = require('./services/projectService');
+    const PersonService = require('./services/personService');
+    const PontajService = require('./services/pontajService');
+    projectService = new ProjectService(path.join(__dirname, '..', 'data'));
+    personService = new PersonService(path.join(__dirname, '..', 'data'));
+    pontajService = new PontajService(path.join(__dirname, '..', 'data'));
+}
 
 // ── Middleware ───────────────────────────────────────────────
 const requestLogger = require('./middleware/requestLogger');
@@ -32,11 +54,6 @@ const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 
 // ── Initializare ─────────────────────────────────────────────
 ensureDirs(DATA_DIR);
-
-// ── Instantiere servicii ─────────────────────────────────────
-const projectService = new ProjectService(DATA_DIR);
-const personService = new PersonService(DATA_DIR);
-const pontajService = new PontajService(DATA_DIR);
 
 // ============================================================
 //  APP EXPRESS
