@@ -46,7 +46,9 @@ class PontajServiceDb {
 
         // Stergem toate zilele existente pentru aceasta luna
         // si reinseram — abordare simpla si sigura
-        const saveAll = this.db.transaction(() => {
+        try {
+            this.db.exec('BEGIN TRANSACTION');
+
             this.db.prepare(`
                 DELETE FROM pontaj_days
                 WHERE project_id = ? AND year = ? AND month = ?
@@ -66,21 +68,26 @@ class PontajServiceDb {
                     let ore = 0;
                     let tip = 'Activitate';
 
-                    if (typeof dayVal === 'string' && (dayVal === 'CO' || dayVal === 'CM')) {
-                        tip = dayVal;
-                    } else if (typeof dayVal === 'number') {
-                        ore = dayVal;
+                    if (typeof dayVal === 'string' && (dayVal.toUpperCase() === 'CO' || dayVal.toUpperCase() === 'CM')) {
+                        tip = dayVal.toUpperCase();
+                    } else {
+                        // Trateaza atat numere cat si string-uri numerice din formulare/parser
+                        const parsedOre = parseFloat(dayVal);
+                        if (!isNaN(parsedOre)) ore = parsedOre;
                     }
 
-                    const normaVal = typeof normaMap[dayStr] === 'number'
-                        ? normaMap[dayStr] : 0;
+                    const parsedNorma = parseFloat(normaMap[dayStr]);
+                    const normaVal = isNaN(parsedNorma) ? 0 : parsedNorma;
 
                     insert.run(projId, personId, yr, mo, dayNum, ore, normaVal, tip);
                 }
             }
-        });
 
-        saveAll();
+            this.db.exec('COMMIT');
+        } catch (err) {
+            this.db.exec('ROLLBACK');
+            throw err;
+        }
     }
 
     /**

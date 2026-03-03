@@ -94,21 +94,28 @@ async function migrate() {
     log(`Migrare ${persons.length} persoane...`);
 
     const insertPerson = db.prepare(`
-        INSERT OR REPLACE INTO persons (id, name, cnp, cim, cor, employer, role, norma)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT OR REPLACE INTO persons (id, name, fname, cnp, cim, cor, employer, role, norma, default_ore, default_norma, employers_json)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     let personCount = 0;
     for (const p of persons) {
+        const employers = p.employers || [];
+        // Angajatorul principal din lista sau campul direct
+        const mainEmployer = employers.length > 0 ? employers[0].partner : (p.partner || p.angajator || p.employer || null);
         insertPerson.run(
             p.id,
             p.name || p.Name || 'Necunoscut',
+            p.fname || p.fName || '',
             p.cnp || p.CNP || null,
             p.cim || p.CIM || null,
             p.cor || p.COR || null,
-            p.angajator || p.employer || p.partner || null,
+            mainEmployer,
             p.type || p.role || null,
-            p.norma ?? 8
+            p.norma ?? 8,
+            p.defaultOre ?? 8,
+            p.defaultNorma ?? 0,
+            JSON.stringify(employers)
         );
         personCount++;
     }

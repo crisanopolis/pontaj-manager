@@ -36,18 +36,28 @@ function applySchema(db) {
     // ── Persoane ─────────────────────────────────────────────
     db.exec(`
         CREATE TABLE IF NOT EXISTS persons (
-            id          TEXT PRIMARY KEY,
-            name        TEXT NOT NULL,
-            cnp         TEXT UNIQUE,
-            cim         TEXT,
-            cor         TEXT,
-            employer    TEXT,
-            role        TEXT,   -- 'Management' | 'Cercetare' | 'BST' | 'EMI'
-            norma       REAL DEFAULT 8,
-            created_at  TEXT DEFAULT (datetime('now')),
-            updated_at  TEXT DEFAULT (datetime('now'))
+            id              TEXT PRIMARY KEY,
+            name            TEXT NOT NULL,       -- nume de familie (ex: "Toma")
+            fname           TEXT DEFAULT '',     -- prenume (ex: "Roxana")
+            cnp             TEXT UNIQUE,
+            cim             TEXT,
+            cor             TEXT,
+            employer        TEXT,                -- partner principal (ex: "LP-BST")
+            role            TEXT,                -- 'Management' | 'Cercetare'
+            norma           REAL DEFAULT 8,
+            default_ore     REAL DEFAULT 8,
+            default_norma   REAL DEFAULT 0,
+            employers_json  TEXT DEFAULT '[]',   -- array angajatori (JSON)
+            created_at      TEXT DEFAULT (datetime('now')),
+            updated_at      TEXT DEFAULT (datetime('now'))
         );
     `);
+    try { db.exec(`ALTER TABLE persons ADD COLUMN fname TEXT DEFAULT ''`); } catch (_) { }
+    try { db.exec(`ALTER TABLE persons ADD COLUMN default_ore REAL DEFAULT 8`); } catch (_) { }
+    try { db.exec(`ALTER TABLE persons ADD COLUMN default_norma REAL DEFAULT 0`); } catch (_) { }
+    try { db.exec(`ALTER TABLE persons ADD COLUMN employers_json TEXT DEFAULT '[]'`); } catch (_) { }
+
+
 
     // ── Membrii unui proiect (relatie M:M Proiect <-> Persoana) ─
     db.exec(`

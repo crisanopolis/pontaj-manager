@@ -1,6 +1,6 @@
 // ============================================================
 //  PONTAJ MANAGER — services/personServiceDb.js
-//  Service persoane cu SQLite
+//  Service persoane cu SQLite — compatibil 100% cu frontend
 // ============================================================
 
 const { uid } = require('../utils/fileStore');
@@ -14,7 +14,7 @@ class PersonServiceDb {
     /** Returneaza toate persoanele. */
     getAll() {
         return this.db.prepare(`SELECT * FROM persons ORDER BY name`).all()
-            .map(this._mapToApi);
+            .map(p => this._mapToApi(p));
     }
 
     /** Returneaza o persoana dupa id. */
@@ -23,72 +23,55 @@ class PersonServiceDb {
         return p ? this._mapToApi(p) : null;
     }
 
-    /** Returneaza o persoana dupa CNP (unica). */
+    /** Returneaza o persoana dupa CNP. */
     getByCnp(cnp) {
         const p = this.db.prepare(`SELECT * FROM persons WHERE cnp = ?`).get(cnp);
         return p ? this._mapToApi(p) : null;
     }
 
     /**
-     * Cauta persoane dupa text (nume, CNP, CIM, COR) si filtre opționale.
-     * @param {{ search?: string, role?: string, employer?: string }} opts
-     */
-    search({ search = '', role = null, employer = null } = {}) {
-        const conditions = [];
-        const params = [];
-
-        if (search) {
-            conditions.push(`(name LIKE ? OR cnp LIKE ? OR cim LIKE ? OR cor LIKE ?)`);
-            const s = `%${search}%`;
-            params.push(s, s, s, s);
-        }
-        if (role) {
-            conditions.push(`role = ?`);
-            params.push(role);
-        }
-        if (employer) {
-            conditions.push(`employer LIKE ?`);
-            params.push(`%${employer}%`);
-        }
-
-        const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-        return this.db.prepare(`SELECT * FROM persons ${where} ORDER BY name`)
-            .all(...params).map(this._mapToApi);
-    }
-
-    /**
      * Creare sau actualizare persoana (upsert).
+     * Accepta exact formatul pe care il trimite frontend-ul.
      */
     upsert(data) {
         data.id = data.id || uid();
+
+        // Normalizeaza campurile — frontend foloseste name + fname
+        const name = data.name || data.Name || 'Necunoscut';
+        const fname = data.fname || data.fName || '';
+        const cnp = data.cnp || data.CNP || null;
+        const cim = data.cim || data.CIM || null;
+        const cor = data.cor || data.COR || null;
+        const employer = data.partner || data.angajator || data.employer || null;
+        const role = data.type || data.role || null;
+        const norma = data.norma ?? 8;
+        const defaultOre = data.defaultOre ?? 8;
+        const defaultNorma = data.defaultNorma ?? 0;
+        const employersJson = JSON.stringify(data.employers || []);
+
         this.db.prepare(`
-            INSERT INTO persons (id, name, cnp, cim, cor, employer, role, norma, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+            INSERT INTO persons (id, name, fname, cnp, cim, cor, employer, role, norma, default_ore, default_norma, employers_json, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
             ON CONFLICT(id) DO UPDATE SET
-                name = excluded.name, cnp = excluded.cnp, cim = excluded.cim,
-                cor = excluded.cor, employer = excluded.employer, role = excluded.role,
-                norma = excluded.norma, updated_at = datetime('now')
-        `).run(
-            data.id,
-            data.name || data.Name,
-            data.cnp || data.CNP || null,
-            data.cim || data.CIM || null,
-            data.cor || data.COR || null,
-            data.angajator || data.employer || data.partner || null,
-            data.type || data.role || null,
-            data.norma ?? 8
-        );
+                name = excluded.name, fname = excluded.fname,
+                cnp = excluded.cnp, cim = excluded.cim, cor = excluded.cor,
+                employer = excluded.employer, role = excluded.role,
+                norma = excluded.norma, default_ore = excluded.default_ore,
+                default_norma = excluded.default_norma,
+                employers_json = excluded.employers_json,
+                updated_at = datetime('now')
+        `).run(data.id, name, fname, cnp, cim, cor, employer, role,
+            norma, defaultOre, defaultNorma, employersJson);
+
         return this.getById(data.id);
     }
 
     /**
-     * Import in masa — face upsert pe fiecare persoana.
-     * Detecteaza duplicatul dupa CNP daca nu exista id.
+     * Import in masa.
      */
     bulkUpsert(list) {
         let added = 0, updated = 0;
         for (const item of list) {
-            // Incearca sa gaseasca dupa CNP daca nu are id
             if (!item.id && (item.cnp || item.CNP)) {
                 const existing = this.getByCnp(item.cnp || item.CNP);
                 if (existing) { item.id = existing.id; updated++; }
@@ -108,16 +91,27 @@ class PersonServiceDb {
         return result.changes > 0;
     }
 
+    /**
+     * Mapeaza randul din DB la formatul exact pe care il asteapta frontend-ul.
+     * Frontend foloseste: id, name, fname, cnp, cim, cor, angajator, type, norma, employers, partner, defaultOre, defaultNorma
+     */
     _mapToApi(p) {
+        let employers = [];
+        try { employers = JSON.parse(p.employers_json || '[]'); } catch { }
         return {
             id: p.id,
-            name: p.name,
+            name: p.name,           // Nume de familie
+            fname: p.fname || '',    // Prenume
             cnp: p.cnp,
             cim: p.cim,
             cor: p.cor,
-            angajator: p.employer,
+            angajator: p.employer,       // compat frontend
+            partner: p.employer,       // compat frontend
             type: p.role,
             norma: p.norma,
+            defaultOre: p.default_ore,
+            defaultNorma: p.default_norma,
+            employers: employers,
         };
     }
 }

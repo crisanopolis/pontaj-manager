@@ -315,14 +315,13 @@ window.handleSmartImport = async function (event) {
                         }
 
                         if (targetCol !== -1) {
-                            colFilterStart = targetCol;
-                            let minEnd = 999;
-                            otherCols.forEach(bCol => {
-                                if (bCol > colFilterStart && bCol < minEnd) minEnd = bCol;
-                            });
-                            colFilterEnd = minEnd;
-                            if (colFilterEnd === 999) colFilterEnd = colFilterStart + 3;
-                            log(`<span style="color:var(--text-muted);font-size:11px">🔍 Auto-Bound: Găsit ${foundSmis} la col=${targetCol} -> Limite [${colFilterStart}, ${colFilterEnd})</span>`);
+                            // Conform formatului oficial Pontaj AIR NAVY/LASER,
+                            // orele pontate (si intervalul) sunt situate pe primele coloane! 
+                            // Norma e aflata la coloana de dupa. 
+                            // Fara dubla-finantare detectata, restrictionam strict pe coloanele din stanga:
+                            colFilterStart = 0;
+                            colFilterEnd = 3;
+                            log(`<span style="color:var(--text-muted);font-size:11px">🔍 Auto-Bound: Găsit ${foundSmis} la col=${targetCol} -> Limite forțate la [0, 3) (se ignoră coloanele de după)</span>`);
                         } else {
                             colFilterStart = 0;
                             colFilterEnd = 999;
