@@ -446,22 +446,26 @@ export const handleSmartImport = async (files, _projects, _persons, forcedProjec
                 }
 
                 // Adaugam persoana la proj.members daca nu e deja acolo
-                // (pentru ca dashboard-ul sa afiseze membrii corecti)
                 try {
                     const projFresh = _projects.find(px => px.id === proj.id);
                     if (projFresh && !projFresh.members) projFresh.members = [];
                     if (projFresh && !projFresh.members.find(m => m.personId === foundPersonId)) {
                         const pObj = _persons.find(px => px.id === foundPersonId);
+
+                        // Incercam sa gasim contractul care se potriveste cu partenerul proiectului
+                        const specificEmp = (pObj.employers || []).find(e => e.partner === projFresh.partner) || {};
+
                         projFresh.members.push({
                             personId: foundPersonId,
-                            partner: pObj.partner || 'LP-BST',
+                            partner: specificEmp.partner || pObj.partner || projFresh.partner || 'LP-BST',
                             type: pObj.type || 'Cercetare',
-                            defaultOre: pObj.defaultOre || 8,
-                            defaultNorma: pObj.defaultNorma || 0
+                            defaultOre: specificEmp.ore || pObj.defaultOre || 8,
+                            defaultNorma: specificEmp.norma || pObj.defaultNorma || 0
                         });
                         await api.put(`/projects/${projFresh.id}`, projFresh);
+                        onLog(`<span style="color:var(--accent2);font-size:11px">  👤 Membru nou adăugat automat în proiect pe contractul: ${specificEmp.partner || 'Implicit'}</span>`);
                     }
-                } catch (e) { /* silent - nu blocam importul pt o eroare la membri */ }
+                } catch (e) { /* silent */ }
 
                 await api.post(`/pontaj/${proj.id}/${foundYear}/${foundMonth}`, mData);
                 successCount++;

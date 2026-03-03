@@ -16,20 +16,35 @@ const initialForm = {
 
 export default function ProjectModal({ open, onClose, project, onSave }) {
     const [form, setForm] = useState(initialForm);
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (open) {
             setForm(project || initialForm);
+            setErrors({});
         }
     }, [open, project]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
         setForm(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) {
+            setErrors(prev => ({ ...prev, [name]: null }));
+        }
+    };
+
+    const validate = () => {
+        const newErrors = {};
+        if (!form.name?.trim()) newErrors.name = 'Numele proiectului este obligatoriu';
+        if (!form.smis?.trim()) newErrors.smis = 'Codul SMIS este obligatoriu';
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
     };
 
     const handleSubmit = () => {
-        onSave(form);
+        if (validate()) {
+            onSave(form);
+        }
     };
 
     return (
@@ -38,10 +53,16 @@ export default function ProjectModal({ open, onClose, project, onSave }) {
             <DialogContent dividers sx={{ borderColor: 'rgba(255,255,255,0.05)' }}>
                 <Grid container spacing={2} sx={{ mt: 0.5 }}>
                     <Grid item xs={12} sm={8}>
-                        <TextField fullWidth label="Nume Proiect" name="name" value={form.name} onChange={handleChange} required size="small" />
+                        <TextField
+                            fullWidth label="Nume Proiect" name="name" value={form.name} onChange={handleChange}
+                            required size="small" error={!!errors.name} helperText={errors.name}
+                        />
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                        <TextField fullWidth label="Cod SMIS" name="smis" value={form.smis} onChange={handleChange} required size="small" />
+                        <TextField
+                            fullWidth label="Cod SMIS" name="smis" value={form.smis} onChange={handleChange}
+                            required size="small" error={!!errors.smis} helperText={errors.smis}
+                        />
                     </Grid>
 
                     <Grid item xs={12} sm={6}>

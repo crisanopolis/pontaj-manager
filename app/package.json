@@ -4,7 +4,8 @@
     "description": "Pontaj Manager - backend REST cu Node.js built-in",
     "main": "src/server.js",
     "scripts": {
-        "start": "node src/server.js"
+        "start": "node src/server.js",
+        "test": "jest"
     },
     "dependencies": {
         "cors": "^2.8.6",

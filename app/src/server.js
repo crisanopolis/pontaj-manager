@@ -68,7 +68,7 @@ app.use(requestLogger);                             // Logging opțional
 // ── API Routes ───────────────────────────────────────────────
 app.use('/api/projects', projectsRouter(projectService));
 app.use('/api/persons', personsRouter(personService));
-app.use('/api/pontaj', pontajRouter(pontajService));
+app.use('/api/pontaj', pontajRouter(pontajService, projectService));
 app.use('/api/dashboard', dashboardRouter(pontajService, projectService));
 app.use('/api', backupRouter(projectService, personService, pontajService));
 

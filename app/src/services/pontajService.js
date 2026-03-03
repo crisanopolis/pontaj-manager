@@ -65,11 +65,8 @@ class PontajService {
         let totalCO_CM = 0;
         const uniquePersons = new Set();
 
-        // Mapa projectId -> Set(personId activ)
-        const activeProjMembers = {};
-        activeProjects.forEach(p => {
-            activeProjMembers[p.id] = new Set((p.members || []).map(m => m.personId));
-        });
+        // Build set of active project IDs
+        const activeProjIds = new Set(activeProjects.map(p => p.id));
 
         if (!fs.existsSync(this.pontajDir)) return { totalOre, totalCO_CM, totalPers: 0 };
 
@@ -77,13 +74,15 @@ class PontajService {
             .filter(f => f.endsWith(`_${year}_${month}.json`));
 
         for (const f of files) {
-            const projId = f.split('_')[0];
-            if (!activeProjMembers[projId]) continue; // proiect sters
+            // File name: projId_year_month.json (projId may contain underscores if uuid)
+            // We match by stripping the suffix
+            const suffix = `_${year}_${month}.json`;
+            const projId = f.slice(0, f.length - suffix.length);
+            if (!activeProjIds.has(projId)) continue; // project deleted
 
             const data = readJSON(path.join(this.pontajDir, f)) || {};
             for (const [pId, pData] of Object.entries(data)) {
-                if (!activeProjMembers[projId].has(pId)) continue; // persoana scoasa din proiect
-
+                // Count ALL persons with data, including imported ones (not just formal members)
                 let hasHours = false;
                 const daysMap = pData.days || {};
                 for (const dayVal of Object.values(daysMap)) {
@@ -100,6 +99,34 @@ class PontajService {
         }
 
         return { totalOre, totalCO_CM, totalPers: uniquePersons.size };
+    }
+
+    /**
+     * Returneaza statistici per proiect pentru luna data.
+     * Incude atat membrii formali cat si persoanele importate.
+     */
+    getProjectStats(projId, year, month) {
+        const data = this.get(projId, year, month);
+        let totalOre = 0;
+        let totalCO_CM = 0;
+        const persWithHours = new Set();
+
+        for (const [pId, pData] of Object.entries(data)) {
+            const daysMap = pData.days || {};
+            let hasHours = false;
+            for (const dayVal of Object.values(daysMap)) {
+                if (typeof dayVal === 'number' && dayVal > 0) {
+                    totalOre += dayVal;
+                    hasHours = true;
+                } else if (typeof dayVal === 'string' && (dayVal === 'CO' || dayVal === 'CM')) {
+                    totalCO_CM++;
+                    hasHours = true;
+                }
+            }
+            if (hasHours) persWithHours.add(pId);
+        }
+
+        return { totalOre, totalCO_CM, persWithHours: persWithHours.size, allPersonIds: Object.keys(data) };
     }
 
     /**
