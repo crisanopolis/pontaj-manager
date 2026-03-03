@@ -6,6 +6,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import DownloadIcon from '@mui/icons-material/Download';
 import api from '../api/client';
 import { useSnackbar } from 'notistack';
+import { generateFiseAll } from '../utils/generator';
 
 const MONTHS_RO = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 const DAYS_RO = ['Du', 'Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ'];
@@ -20,6 +21,7 @@ function isWeekend(year, month, day) {
 
 export default function PontajPage() {
     const [projects, setProjects] = useState([]);
+    const [allPersons, setAllPersons] = useState([]);
     const [currentProject, setCurrentProject] = useState('');
     const [year, setYear] = useState(new Date().getFullYear());
     const [month, setMonth] = useState(new Date().getMonth() + 1); // 1-12
@@ -54,8 +56,8 @@ export default function PontajPage() {
                 setCurrentProject(projRes.data[0].id);
             }
 
-            // Create dictionary for fast lookups
             const pList = Array.isArray(persRes.data) ? persRes.data : persRes.data.rows;
+            setAllPersons(pList);
             const dict = {};
             pList.forEach(p => dict[p.id] = p);
             setPersonsDict(dict);
@@ -73,7 +75,6 @@ export default function PontajPage() {
                 setProjectMembers(proj.members || []);
             }
             const res = await api.get(`/pontaj/${currentProject}/${year}/${month}`);
-            // Ensure we have an object for every member even if backend returned {}
             const data = res.data || {};
             (proj?.members || []).forEach(m => {
                 if (!data[m.personId]) {
@@ -107,6 +108,15 @@ export default function PontajPage() {
             enqueueSnackbar('Pontaj salvat cu succes!', { variant: 'success' });
         } catch (e) {
             enqueueSnackbar('Eroare la salvare.', { variant: 'error' });
+        }
+    };
+
+    const handleGenerateExcel = async () => {
+        const onLog = (msg) => enqueueSnackbar(msg.replace(/<[^>]*>?/gm, ''), { variant: 'info' });
+        try {
+            await generateFiseAll({ year, month, instName: 'BlueSpace Technology', intocmitName: 'Adrian Dragomir', aprobatName: 'Ion Doe' }, projects, allPersons, onLog);
+        } catch (e) {
+            enqueueSnackbar('Generarea a eșuat!', { variant: 'error' });
         }
     };
 
@@ -166,8 +176,8 @@ export default function PontajPage() {
                     <Button variant="contained" color="primary" startIcon={<SaveIcon />} onClick={savePontaj} disabled={loading || !currentProject}>
                         Salvează
                     </Button>
-                    <Button variant="outlined" color="secondary" startIcon={<DownloadIcon />} disabled={loading || !currentProject}>
-                        Generare Excel
+                    <Button variant="outlined" color="secondary" startIcon={<DownloadIcon />} onClick={handleGenerateExcel} disabled={loading || !currentProject}>
+                        Generare Fise ZIP
                     </Button>
                 </Box>
             </Paper>

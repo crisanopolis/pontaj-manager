@@ -14,7 +14,7 @@ const menuItems = [
     { text: 'Proiecte', route: '/projects', icon: <FolderIcon /> },
     { text: 'Bază persoane', route: '/persons', icon: <PeopleIcon /> },
     { text: 'Pontaj Individual', route: '/pontaj', icon: <CalendarMonthIcon /> },
-    // { text: 'Istoric & Rapoarte', route: '/history', icon: <AssessmentIcon /> },
+    { text: 'Istoric & Rapoarte', route: '/history', icon: <AssessmentIcon /> },
     // { text: 'Generare Fișe', route: '/export', icon: <PrintIcon /> },
 ];
 

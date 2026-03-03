@@ -4,7 +4,8 @@ import Layout from './components/Layout';
 import ProjectsPage from './pages/ProjectsPage';
 import PersonsPage from './pages/PersonsPage';
 import PontajPage from './pages/PontajPage';
-// import HistoryPage from './pages/HistoryPage';
+import HistoryPage from './pages/HistoryPage';
+// import ExportPage from './pages/ExportPage';
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
           <Route path="/projects" element={<ProjectsPage />} />
           <Route path="/persons" element={<PersonsPage />} />
           <Route path="/pontaj" element={<PontajPage />} />
-          {/* <Route path="/history" element={<HistoryPage />} /> */}
+          <Route path="/history" element={<HistoryPage />} />
+          {/* <Route path="/export" element={<ExportPage />} /> */}
         </Routes>
       </Layout>
     </Router>
